@@ -225,29 +225,6 @@ void batmon_history_get(struct batmon_sample **hist, unsigned int *nr,
 	*head = batmon_history_head;
 }
 
-static bool batmon_charge_neg;
-static bool batmon_polarity_known;
-
-static void polarity_detect(u8 status, s32 curr)
-{
-	if (batmon_polarity_known || curr == 0)
-		return;
-	if (status == POWER_SUPPLY_STATUS_CHARGING) {
-		batmon_charge_neg = curr < 0;
-		batmon_polarity_known = true;
-	} else if (status == POWER_SUPPLY_STATUS_DISCHARGING) {
-		batmon_charge_neg = curr > 0;
-		batmon_polarity_known = true;
-	}
-}
-
-static bool net_discharge(s32 avg)
-{
-	if (batmon_polarity_known)
-		return batmon_charge_neg ? avg > 0 : avg < 0;
-	return false;
-}
-
 static void sample_battery(struct batmon_sample *s)
 {
 	int val;
@@ -256,6 +233,7 @@ static void sample_battery(struct batmon_sample *s)
 	s->ts = batmon_now_ns();
 	s->wall = batmon_wall_sec();
 	s->cap = U32_MAX;
+	s->counter = U32_MAX;
 	s->status = POWER_SUPPLY_STATUS_UNKNOWN;
 	s->health = POWER_SUPPLY_HEALTH_UNKNOWN;
 
@@ -276,8 +254,10 @@ static void sample_battery(struct batmon_sample *s)
 		s->status = val;
 	if (!batmon_psy_get_int(batmon_main, POWER_SUPPLY_PROP_HEALTH, &val))
 		s->health = val;
-
-	polarity_detect(s->status, s->curr);
+	if (!batmon_psy_get_int(batmon_main,
+				POWER_SUPPLY_PROP_CHARGE_COUNTER, &val) &&
+	    val >= 0)
+		s->counter = val;
 }
 
 static unsigned int history_window(struct batmon_sample *newest,
@@ -481,13 +461,27 @@ int batmon_drain_calc(struct batmon_drain *d)
 			s64 mag = avg < 0 ? -avg : avg;
 			int rate = (int)div_s64(mag * 100000,
 						(s64)mAh * 60);
-			bool discharge;
+			bool discharge = false;
 
-			if (batmon_polarity_known)
-				discharge = net_discharge(avg);
-			else
+			if (newest->counter != U32_MAX &&
+			    oldest->counter != U32_MAX) {
+				s64 cdelta = (s64)newest->counter -
+					     (s64)oldest->counter;
+
+				if (cdelta > (s64)ufull ||
+				    -cdelta > (s64)ufull) {
+					discharge = newest->status ==
+						POWER_SUPPLY_STATUS_DISCHARGING;
+				} else if (cdelta < 0) {
+					discharge = true;
+				} else if (cdelta == 0) {
+					discharge = newest->status ==
+						POWER_SUPPLY_STATUS_DISCHARGING;
+				}
+			} else {
 				discharge = newest->status ==
 					    POWER_SUPPLY_STATUS_DISCHARGING;
+			}
 			if (discharge)
 				rate = -rate;
 			*wins[w].rate = rate;

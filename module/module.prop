@@ -1,6 +1,6 @@
 id=batmon
 name=BatMon
-version=1.2.1
-versionCode=14
+version=1.2.2
+versionCode=15
 author=dere3046
 description=Battery drain telemetry and per-process monitoring LKM
