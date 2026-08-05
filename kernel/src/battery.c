@@ -44,8 +44,8 @@ static struct notifier_block batmon_psy_nb = {
 static const char *const psy_charger_names[] = PSY_CHARGER_CANDIDATES;
 static const char *const psy_all_names[] = PSY_ALLCANDIDATES;
 
-static int psy_get_int(struct power_supply *psy,
-		       enum power_supply_property prop, int *val)
+int batmon_psy_get_int(struct power_supply *psy,
+			enum power_supply_property prop, int *val)
 {
 	union power_supply_propval pval;
 	int rc;
@@ -62,31 +62,21 @@ int batmon_psy_get_mv(struct power_supply *psy,
 {
 	int raw, rc;
 
-	rc = psy_get_int(psy, prop, &raw);
+	rc = batmon_psy_get_int(psy, prop, &raw);
 	if (rc)
 		return rc;
 	*val = raw / 1000;
 	return 0;
 }
 
-int batmon_psy_get_ma(struct power_supply *psy,
-		      enum power_supply_property prop, int *val)
-{
-	int raw, rc;
 
-	rc = psy_get_int(psy, prop, &raw);
-	if (rc)
-		return rc;
-	*val = raw / 1000;
-	return 0;
-}
 
 static bool psy_has_prop(struct power_supply *psy,
 			 enum power_supply_property prop)
 {
 	int val;
 
-	return !psy_get_int(psy, prop, &val);
+	return !batmon_psy_get_int(psy, prop, &val);
 }
 
 static bool psy_is_charger(const char *name)
@@ -121,7 +111,7 @@ static void psy_track_update(const char *name)
 	psy = power_supply_get_by_name(name);
 	if (!psy)
 		return;
-	if (!psy_get_int(psy, POWER_SUPPLY_PROP_STATUS, &status)) {
+	if (!batmon_psy_get_int(psy, POWER_SUPPLY_PROP_STATUS, &status)) {
 		if (batmon_psy_track[slot].known &&
 		    batmon_psy_track[slot].last_status != (u32)status)
 			batmon_event(EVENT_PLUG, 0, 0, 0, 0, 0);
@@ -249,19 +239,19 @@ static void sample_battery(struct batmon_sample *s)
 	if (!batmon_main)
 		return;
 
-	if (!psy_get_int(batmon_main, POWER_SUPPLY_PROP_CAPACITY, &val))
+	if (!batmon_psy_get_int(batmon_main, POWER_SUPPLY_PROP_CAPACITY, &val))
 		s->cap = val;
 	if (!batmon_psy_get_mv(batmon_main, POWER_SUPPLY_PROP_VOLTAGE_NOW, &val))
 		s->volt = val;
-	if (!batmon_psy_get_ma(batmon_main, POWER_SUPPLY_PROP_CURRENT_NOW, &val))
+	if (!batmon_psy_get_int(batmon_main, POWER_SUPPLY_PROP_CURRENT_NOW, &val))
 		s->curr = val;
-	if (!batmon_psy_get_ma(batmon_main, POWER_SUPPLY_PROP_CURRENT_AVG, &val))
+	if (!batmon_psy_get_int(batmon_main, POWER_SUPPLY_PROP_CURRENT_AVG, &val))
 		s->curravg = val;
-	if (!psy_get_int(batmon_main, POWER_SUPPLY_PROP_TEMP, &val))
+	if (!batmon_psy_get_int(batmon_main, POWER_SUPPLY_PROP_TEMP, &val))
 		s->temp = val;
-	if (!psy_get_int(batmon_main, POWER_SUPPLY_PROP_STATUS, &val))
+	if (!batmon_psy_get_int(batmon_main, POWER_SUPPLY_PROP_STATUS, &val))
 		s->status = val;
-	if (!psy_get_int(batmon_main, POWER_SUPPLY_PROP_HEALTH, &val))
+	if (!batmon_psy_get_int(batmon_main, POWER_SUPPLY_PROP_HEALTH, &val))
 		s->health = val;
 }
 
@@ -413,7 +403,7 @@ int batmon_drain_calc(struct batmon_drain *d)
 	d->temp = 0;
 
 	if (batmon_main &&
-	    !psy_get_int(batmon_main, POWER_SUPPLY_PROP_CHARGE_FULL, &ufull))
+	    !batmon_psy_get_int(batmon_main, POWER_SUPPLY_PROP_CHARGE_FULL, &ufull))
 		mAh = ufull / 1000;
 
 	spin_lock_irqsave(&batmon_history_lock, flags);

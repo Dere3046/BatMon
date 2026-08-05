@@ -70,9 +70,7 @@ export const BatterySummary = memo(function BatterySummary({ snap }: { snap: Bat
   const voltV = ((b.voltageMv ?? 0) / 1000).toFixed(3);
 
   const raw = b.currentMa ?? 0;
-  const mag = Math.abs(raw);
-  const cur =
-    b.status === 1 || b.status === 4 ? `+${mag}` : b.status === 2 ? `-${mag}` : String(raw);
+  const cur = String(raw);
 
   const temp = ((b.tempCx10 ?? 0) / 10).toFixed(1);
   const rate = snap.drain.rate1m ?? snap.drain.rate5m ?? snap.drain.rate15m;

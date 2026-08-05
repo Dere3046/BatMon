@@ -172,9 +172,6 @@ static int show_battery(struct seq_file *s, void *v)
 
 		if (props[i].prop == POWER_SUPPLY_PROP_VOLTAGE_NOW) {
 			rc = batmon_psy_get_mv(psy, props[i].prop, &val);
-		} else if (props[i].prop == POWER_SUPPLY_PROP_CURRENT_NOW ||
-			   props[i].prop == POWER_SUPPLY_PROP_CURRENT_AVG) {
-			rc = batmon_psy_get_ma(psy, props[i].prop, &val);
 		} else {
 			rc = power_supply_get_property(psy, props[i].prop,
 						      &pval);
@@ -210,8 +207,8 @@ static int show_psy(struct seq_file *s, void *v)
 		if (!batmon_psy_get_mv(psy, POWER_SUPPLY_PROP_VOLTAGE_NOW,
 				       &val))
 			seq_printf(s, "voltage_mv %d\n", val);
-		if (!batmon_psy_get_ma(psy, POWER_SUPPLY_PROP_CURRENT_NOW,
-				       &val))
+		if (!batmon_psy_get_int(psy, POWER_SUPPLY_PROP_CURRENT_NOW,
+					&val))
 			seq_printf(s, "current_ma %d\n", val);
 		if (!power_supply_get_property(psy, POWER_SUPPLY_PROP_TEMP,
 					       &pval))
