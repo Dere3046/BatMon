@@ -65,7 +65,14 @@ export function App() {
           setError(null);
         }
       } catch (e) {
-        if (!cancelled) setError(`${t('app.readError')}: ${String(e)}`);
+        if (!cancelled) {
+          const msg = String(e);
+          if (/no such file|not found/i.test(msg)) {
+            setError(t('app.moduleNotLoaded'));
+          } else {
+            setError(`${t('app.readError')}: ${msg}`);
+          }
+        }
       }
     };
     tick();

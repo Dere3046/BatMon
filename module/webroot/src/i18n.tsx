@@ -4,8 +4,9 @@ import type { ReactNode } from 'react';
 const en = {
   'app.title': 'BatMon',
   'app.language': 'Language',
-  'app.noRuntime': 'no runtime detected, open from KernelSU or MMRL',
+  'app.noRuntime': 'no runtime detected, open from KernelSU, APatch or MMRL',
   'app.readError': 'failed to read telemetry',
+  'app.moduleNotLoaded': 'module not loaded, check boot log or load manually',
   'battery.title': 'Battery',
   'battery.voltage': 'voltage',
   'battery.current': 'current',
@@ -89,8 +90,9 @@ export type MessageKey = keyof typeof en;
 const zh: Record<MessageKey, string> = {
   'app.title': 'BatMon',
   'app.language': '语言',
-  'app.noRuntime': '未检测到运行环境，请从 KernelSU 或 MMRL 打开',
+  'app.noRuntime': '未检测到运行环境，请从 KernelSU、APatch 或 MMRL 打开',
   'app.readError': '读取遥测数据失败',
+  'app.moduleNotLoaded': '模块未加载，请查看开机日志或手动加载',
   'battery.title': '电池',
   'battery.voltage': '电压',
   'battery.current': '电流',
