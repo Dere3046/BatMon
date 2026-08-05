@@ -340,18 +340,18 @@ static int show_drain(struct seq_file *s, void *v)
 	seq_printf(s, "temp_cx10 %d\n", d.temp);
 	seq_printf(s, "avg_ma_1m %d\n", d.avg_ma_1m);
 	if (d.rate_1m != INT_MIN)
-		seq_printf(s, "rate_1m %d.%02d%%/min\n", d.rate_1m / 100,
-			   abs(d.rate_1m % 100));
+		seq_printf(s, "rate_1m %d.%03d%%/min\n", d.rate_1m / 1000,
+			   abs(d.rate_1m % 1000));
 	else
 		seq_puts(s, "rate_1m n/a\n");
 	if (d.rate_5m != INT_MIN)
-		seq_printf(s, "rate_5m %d.%02d%%/min\n", d.rate_5m / 100,
-			   abs(d.rate_5m % 100));
+		seq_printf(s, "rate_5m %d.%03d%%/min\n", d.rate_5m / 1000,
+			   abs(d.rate_5m % 1000));
 	else
 		seq_puts(s, "rate_5m n/a\n");
 	if (d.rate_15m != INT_MIN)
-		seq_printf(s, "rate_15m %d.%02d%%/min\n", d.rate_15m / 100,
-			   abs(d.rate_15m % 100));
+		seq_printf(s, "rate_15m %d.%03d%%/min\n", d.rate_15m / 1000,
+			   abs(d.rate_15m % 1000));
 	else
 		seq_puts(s, "rate_15m n/a\n");
 	if (d.volt_slope_1m != INT_MIN)

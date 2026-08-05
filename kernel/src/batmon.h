@@ -10,7 +10,7 @@
 #include <linux/pid.h>
 #include <linux/power_supply.h>
 
-#define BATMON_VERSION "1.1.5"
+#define BATMON_VERSION "1.1.6"
 
 #define BATMON_MAX_TASKS 1024
 #define BATMON_HISTORY 2048

@@ -24,7 +24,7 @@ function RateBox({ label, value, warn }: { label: string; value: string; warn?: 
 export const DrainPanel = memo(function DrainPanel({ snap }: { snap: BatMonSnapshot }) {
   const { t } = useI18n();
   const d = snap.drain;
-  const fast = d.rate1m !== null && d.rate1m <= -100;
+  const fast = d.rate1m !== null && d.rate1m <= -1000;
   const na = t('drain.n_a');
   const pctPerMin = t('drain.percentPerMin');
   const mvPerMin = t('drain.mvPerMin');
@@ -48,7 +48,7 @@ export const DrainPanel = memo(function DrainPanel({ snap }: { snap: BatMonSnaps
   const fmtRate = (rate: number | null): string => {
     if (rate === null) return na;
     const sign = rate < 0 ? '-' : '';
-    return `${sign}${(Math.abs(rate) / 100).toFixed(2)} ${pctPerMin}`;
+    return `${sign}${(Math.abs(rate) / 1000).toFixed(3)} ${pctPerMin}`;
   };
 
   const fmtSlope = (slope: number | null): string => {
@@ -74,7 +74,7 @@ export const DrainPanel = memo(function DrainPanel({ snap }: { snap: BatMonSnaps
           <RateBox
             label={t('drain.rate5m')}
             value={fmtRate(d.rate5m)}
-            warn={d.rate5m !== null && d.rate5m <= -60}
+            warn={d.rate5m !== null && d.rate5m <= -600}
           />
           <RateBox label={t('drain.rate15m')} value={fmtRate(d.rate15m)} />
           <RateBox

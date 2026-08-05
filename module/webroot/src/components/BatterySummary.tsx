@@ -80,7 +80,7 @@ export const BatterySummary = memo(function BatterySummary({ snap }: { snap: Bat
     b.timeToEmptyS !== undefined
       ? (b.timeToEmptyS / 3600).toFixed(1)
       : cap > 0 && rate !== null && rate < 0
-        ? (cap / (Math.abs(rate) / 100) / 60).toFixed(1)
+        ? (cap / (Math.abs(rate) / 1000) / 60).toFixed(1)
         : null;
 
   const gauge = useMemo((): EChartsOption => {

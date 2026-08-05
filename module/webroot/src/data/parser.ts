@@ -63,7 +63,7 @@ export function parseDrain(text: string): DrainData {
   };
   const rate = (v: string | null): number | null => {
     if (!v || v === 'n/a') return null;
-    return Math.round(Number(v.replace('%/min', '')) * 100);
+    return Math.round(Number(v.replace('%/min', '')) * 1000);
   };
   const slopeRaw = get('volt_slope_1m');
   return {

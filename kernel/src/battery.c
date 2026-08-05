@@ -77,9 +77,7 @@ int batmon_psy_get_ma(struct power_supply *psy,
 	rc = psy_get_int(psy, prop, &raw);
 	if (rc)
 		return rc;
-	if (abs(raw) >= 5000)
-		raw /= 1000;
-	*val = raw;
+	*val = raw / 1000;
 	return 0;
 }
 
@@ -401,6 +399,7 @@ int batmon_drain_calc(struct batmon_drain *d)
 	};
 	struct batmon_sample *hist, *newest = NULL;
 	unsigned int nr, head, i, idx;
+	int ufull = 0, mAh = 0;
 	u64 now;
 	size_t w;
 	unsigned long flags;
@@ -412,6 +411,10 @@ int batmon_drain_calc(struct batmon_drain *d)
 	d->cap = -1;
 	d->volt = 0;
 	d->temp = 0;
+
+	if (batmon_main &&
+	    !psy_get_int(batmon_main, POWER_SUPPLY_PROP_CHARGE_FULL, &ufull))
+		mAh = ufull / 1000;
 
 	spin_lock_irqsave(&batmon_history_lock, flags);
 	batmon_history_get(&hist, &nr, &head);
@@ -446,17 +449,28 @@ int batmon_drain_calc(struct batmon_drain *d)
 			cnt++;
 		}
 
+		if (!oldest || cnt < 2 || el <= 0)
+			continue;
+
 		if (w == 0)
-			d->avg_ma_1m = cnt ? (s32)div_s64(cap_sum, cnt) : 0;
-		if (oldest && cnt >= 2 && el > 0 &&
-		    oldest->cap != U32_MAX && newest->cap != U32_MAX) {
-			s64 delta = (s64)newest->cap - (s64)oldest->cap;
+			d->avg_ma_1m = (s32)div_s64(cap_sum, cnt);
+
+		if (w == 0) {
 			s64 vdelta = (s64)newest->volt - (s64)oldest->volt;
 
-			*wins[w].rate = (int)(delta * 100 * 60000 / el);
-			if (w == 0)
-				d->volt_slope_1m =
-					(int)(vdelta * 10 * 60000 / el);
+			d->volt_slope_1m = (int)(vdelta * 10 * 60000 / el);
+		}
+
+		if (mAh > 0) {
+			s64 avg = div_s64(cap_sum, cnt);
+
+			*wins[w].rate = (int)div_s64(avg * 100000,
+						     (s64)mAh * 60);
+		} else if (oldest->cap != U32_MAX &&
+			   newest->cap != U32_MAX) {
+			s64 delta = (s64)newest->cap - (s64)oldest->cap;
+
+			*wins[w].rate = (int)(delta * 1000 * 60000 / el);
 		}
 	}
 	spin_unlock_irqrestore(&batmon_history_lock, flags);
