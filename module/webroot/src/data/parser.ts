@@ -167,7 +167,7 @@ export function parseEvents(lines: string[]): BatMonEvent[] {
 }
 
 const TASK_RE =
-  /^(\d+)\s+(\d+)\s+(.+?)\s+cpu_ms\s+(\d+)\s+wake\s+(\d+)\s+sleep\s+(\d{2}:\d{2}:\d{2})\s+nvcsw\s+(\d+)\s+nivcsw\s+(\d+)\s+r\s+(\d+)\s+w\s+(\d+)$/;
+  /^\s*(\d+)\s+(\d+)\s+(.+?)\s+cpu_ms\s+(\d+)\s+wake\s+(\d+)\s+sleep\s+(\d{2}:\d{2}:\d{2})\s+nvcsw\s+(\d+)\s+nivcsw\s+(\d+)\s+r\s+(\d+)\s+w\s+(\d+)$/;
 
 export function parseTasks(lines: string[]): TaskRow[] {
   const out: TaskRow[] = [];

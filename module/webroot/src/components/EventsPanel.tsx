@@ -28,6 +28,8 @@ const EVENT_COLORS: Record<
   UNLOAD: 'default',
 };
 
+const ANOMALY_TYPES = new Set<EventType>(['DROP', 'DRAIN', 'POWER', 'GAUGE']);
+
 function capText(v: number): string {
   return v < 0 ? '-' : String(v);
 }
@@ -70,12 +72,14 @@ export const EventsPanel = memo(function EventsPanel({ events }: { events: BatMo
                       >
                         {e.time}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {t('events.cap')} {capText(e.capBefore)} → {capText(e.capAfter)}% &nbsp;
-                        {t('events.volt')} {capText(e.voltBefore)} → {capText(e.voltAfter)}
-                        {t('unit.mv')} &nbsp;{t('events.curr')} {e.currAvg}
-                        {t('unit.ma')}
-                      </Typography>
+                      {ANOMALY_TYPES.has(e.type) && (
+                        <Typography variant="caption" color="text.secondary">
+                          {t('events.cap')} {capText(e.capBefore)} → {capText(e.capAfter)}% &nbsp;
+                          {t('events.volt')} {capText(e.voltBefore)} → {capText(e.voltAfter)}
+                          {t('unit.mv')} &nbsp;{t('events.curr')} {e.currAvg}
+                          {t('unit.ma')}
+                        </Typography>
+                      )}
                     </Box>
                   }
                   secondary={

@@ -1,4 +1,4 @@
-import type { BatMonSnapshot } from './types';
+import type { BatMonSnapshot, ConfigData } from './types';
 import {
   parseBattery,
   parseConfig,
@@ -15,28 +15,33 @@ import {
 export interface DataSource {
   readonly kind: 'proc';
   readAll(): Promise<BatMonSnapshot>;
+  setConfig(values: Partial<ConfigData>): Promise<void>;
 }
 
-const NODES = [
+const SMALL_NODES = [
   'info',
   'battery',
   'drain',
-  'history',
   'events',
-  'tasks',
-  'deltas',
   'cpu',
   'psy',
   'suspend',
   'config',
 ] as const;
 
-const NODE_LIST = NODES.join(' ');
+const LARGE_NODES = ['history', 'tasks', 'deltas'] as const;
+
+const ALL_NODES = [...SMALL_NODES, ...LARGE_NODES] as const;
+
 const SEP = '###BATMON###';
-const BATCH_CMD = `for f in ${NODE_LIST}; do echo "${SEP}$f"; cat /proc/batmon/$f; done`;
+
+function batchCmd(nodes: readonly string[]): string {
+  return `for f in ${nodes.join(' ')}; do echo "${SEP}$f"; cat /proc/batmon/$f; done`;
+}
 
 interface Runtime {
   readAll(): Promise<Map<string, string>>;
+  writeConfig(lines: string[]): Promise<void>;
 }
 
 declare global {
@@ -48,6 +53,7 @@ declare global {
     };
     _batmon_File?: {
       read(path: string): Promise<string>;
+      write(path: string, data: string): Promise<void>;
     };
   }
 }
@@ -58,7 +64,7 @@ function splitBatch(stdout: string): Map<string, string> {
     const nl = part.indexOf('\n');
     if (nl < 0) continue;
     const node = part.slice(0, nl).trim();
-    if ((NODES as readonly string[]).includes(node)) {
+    if ((ALL_NODES as readonly string[]).includes(node)) {
       out.set(node, part.slice(nl + 1));
     }
   }
@@ -70,10 +76,13 @@ function mmrlRuntime(): Runtime | null {
   return {
     readAll: async () => {
       const out = new Map<string, string>();
-      for (const n of NODES) {
+      for (const n of ALL_NODES) {
         out.set(n, await window._batmon_File!.read(`/proc/batmon/${n}`));
       }
       return out;
+    },
+    writeConfig: async (lines: string[]) => {
+      await window._batmon_File!.write('/proc/batmon/config', lines.join('\n') + '\n');
     },
   };
 }
@@ -81,27 +90,51 @@ function mmrlRuntime(): Runtime | null {
 function ksuRuntime(): Runtime | null {
   if (!window.ksu?.exec) return null;
 
-  const asyncExec = (): Promise<Map<string, string>> =>
+  const EXEC_TIMEOUT_MS = 10000;
+
+  const execOnce = (cmd: string): Promise<string> =>
     new Promise((resolve, reject) => {
+      let done = false;
+      const timer = setTimeout(() => {
+        if (!done) {
+          done = true;
+          delete window.__batmon_cb;
+          reject(new Error('exec timeout'));
+        }
+      }, EXEC_TIMEOUT_MS);
       window.__batmon_cb = (code: number, stdout: string, stderr: string) => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
         delete window.__batmon_cb;
         if (code !== 0) {
           reject(new Error(stderr.trim() || `exit ${code}`));
         } else {
-          resolve(splitBatch(stdout));
+          resolve(stdout);
         }
       };
       try {
-        window.ksu!.exec(BATCH_CMD, '{}', '__batmon_cb');
+        window.ksu!.exec(cmd, '{}', '__batmon_cb');
       } catch (e) {
+        clearTimeout(timer);
         delete window.__batmon_cb;
         reject(e);
       }
     });
 
-  const syncExec = async (): Promise<Map<string, string>> => {
+  const asyncRead = async (): Promise<Map<string, string>> => {
+    const small = await execOnce(batchCmd(SMALL_NODES));
+    const large = await execOnce(batchCmd(LARGE_NODES));
+    const out = splitBatch(small);
+    for (const [k, v] of splitBatch(large)) {
+      out.set(k, v);
+    }
+    return out;
+  };
+
+  const syncRead = async (): Promise<Map<string, string>> => {
     const out = new Map<string, string>();
-    for (const n of NODES) {
+    for (const n of ALL_NODES) {
       out.set(n, window.ksu!.exec(`cat /proc/batmon/${n}`));
     }
     return out;
@@ -110,16 +143,33 @@ function ksuRuntime(): Runtime | null {
   return {
     readAll: async () => {
       try {
-        return await asyncExec();
+        return await asyncRead();
       } catch {
-        return await syncExec();
+        return await syncRead();
       }
+    },
+    writeConfig: async (lines: string[]) => {
+      const cmd = lines.map((l) => `printf '%s\\n' '${l}' > /proc/batmon/config`).join('; ');
+      await execOnce(cmd);
     },
   };
 }
 
 function getRuntime(): Runtime | null {
   return mmrlRuntime() ?? ksuRuntime();
+}
+
+function configToLines(values: Partial<ConfigData>): string[] {
+  const lines: string[] = [];
+  if (values.pollMs !== undefined) lines.push(`poll_ms=${values.pollMs}`);
+  if (values.jumpPct !== undefined) lines.push(`jump_pct=${values.jumpPct}`);
+  if (values.ratePctMin !== undefined) lines.push(`rate_pct_min=${values.ratePctMin}`);
+  if (values.warnMa !== undefined) lines.push(`warn_ma=${values.warnMa}`);
+  if (values.dropMa !== undefined) lines.push(`drop_ma=${values.dropMa}`);
+  if (values.dropPctMin !== undefined) lines.push(`drop_pct_min=${values.dropPctMin}`);
+  if (values.enabled !== undefined) lines.push(`enabled=${values.enabled ? 1 : 0}`);
+  if (values.logDmesg !== undefined) lines.push(`log_dmesg=${values.logDmesg ? 1 : 0}`);
+  return lines;
 }
 
 export class ProcSource implements DataSource {
@@ -152,5 +202,12 @@ export class ProcSource implements DataSource {
       config: parseConfig(need('config')),
       fetchedAt: Date.now(),
     };
+  }
+
+  async setConfig(values: Partial<ConfigData>): Promise<void> {
+    const lines = configToLines(values);
+    if (lines.length > 0) {
+      await this.runtime.writeConfig(lines);
+    }
   }
 }

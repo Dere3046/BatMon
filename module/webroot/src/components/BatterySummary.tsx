@@ -68,9 +68,20 @@ export const BatterySummary = memo(function BatterySummary({ snap }: { snap: Bat
           ? 'error'
           : 'default';
   const voltV = ((b.voltageMv ?? 0) / 1000).toFixed(3);
-  const cur = (b.currentMa ?? 0) > 0 ? '+' + b.currentMa : String(b.currentMa ?? 0);
+
+  const raw = b.currentMa ?? 0;
+  const mag = Math.abs(raw);
+  const cur =
+    b.status === 1 || b.status === 4 ? `+${mag}` : b.status === 2 ? `-${mag}` : String(raw);
+
   const temp = ((b.tempCx10 ?? 0) / 10).toFixed(1);
-  const emptyHours = b.timeToEmptyS ? (b.timeToEmptyS / 3600).toFixed(1) : null;
+  const rate = snap.drain.rate1m ?? snap.drain.rate5m;
+  const tteHours =
+    b.timeToEmptyS !== undefined
+      ? (b.timeToEmptyS / 3600).toFixed(1)
+      : cap > 0 && rate !== null && rate < 0
+        ? (cap / (Math.abs(rate) / 100) / 60).toFixed(1)
+        : null;
 
   const gauge = useMemo((): EChartsOption => {
     return {
@@ -151,8 +162,8 @@ export const BatterySummary = memo(function BatterySummary({ snap }: { snap: Bat
             <StatCard
               icon={<TimelineIcon />}
               label={t('battery.timeToEmpty')}
-              value={emptyHours ?? '-'}
-              unit={emptyHours ? t('unit.hours') : undefined}
+              value={tteHours ?? '-'}
+              unit={tteHours ? t('unit.hours') : undefined}
             />
           </Box>
         </Stack>

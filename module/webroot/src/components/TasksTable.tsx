@@ -112,65 +112,99 @@ export function TasksTable({ tasks, deltas }: { tasks: TaskRow[]; deltas: TaskRo
           </Box>
         </Box>
         <TableContainer>
-          <Table size="small" stickyHeader>
-            <TableHead>
-              <TableRow>
-                <TableCell>{t('tasks.comm')}</TableCell>
-                {head(t('tasks.cpuMs'), 'cpuMs')}
-                {head(t('tasks.wake'), 'wake')}
-                <TableCell align="right" size="small">
-                  {t('tasks.sleep')}
-                </TableCell>
-                <TableCell align="right" size="small">
-                  {t('tasks.nvcsw')}
-                </TableCell>
-                <TableCell align="right" size="small">
-                  {t('tasks.nivcsw')}
-                </TableCell>
-                {head(t('tasks.read'), 'rbytes')}
-                {head(t('tasks.write'), 'wbytes')}
-                {head(t('tasks.pid'), 'pid')}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {rows.slice(0, 100).map((r, i) => (
-                <TableRow key={i} hover>
-                  <TableCell size="small" sx={{ fontFamily: 'ui-monospace, monospace' }}>
-                    {r.comm}
+          {rows.length === 0 ? (
+            <Typography variant="body2" color="text.secondary" sx={{ py: 3, textAlign: 'center' }}>
+              {view === 'deltas' ? t('tasks.noDeltas') : t('tasks.empty')}
+            </Typography>
+          ) : (
+            <Table size="small" stickyHeader>
+              <TableHead>
+                <TableRow>
+                  <TableCell>{t('tasks.comm')}</TableCell>
+                  {head(t('tasks.cpuMs'), 'cpuMs')}
+                  {head(t('tasks.wake'), 'wake')}
+                  <TableCell align="right" size="small">
+                    {t('tasks.sleep')}
                   </TableCell>
-                  <TableCell align="right" size="small" sx={{ fontVariantNumeric: 'tabular-nums' }}>
-                    {r.cpuMs}
+                  <TableCell align="right" size="small">
+                    {t('tasks.nvcsw')}
                   </TableCell>
-                  <TableCell align="right" size="small" sx={{ fontVariantNumeric: 'tabular-nums' }}>
-                    {r.wake}
+                  <TableCell align="right" size="small">
+                    {t('tasks.nivcsw')}
                   </TableCell>
-                  <TableCell align="right" size="small" sx={{ fontVariantNumeric: 'tabular-nums' }}>
-                    {r.sleep}
-                  </TableCell>
-                  <TableCell align="right" size="small" sx={{ fontVariantNumeric: 'tabular-nums' }}>
-                    {r.nvcsw}
-                  </TableCell>
-                  <TableCell align="right" size="small" sx={{ fontVariantNumeric: 'tabular-nums' }}>
-                    {r.nivcsw}
-                  </TableCell>
-                  <TableCell align="right" size="small" sx={{ fontVariantNumeric: 'tabular-nums' }}>
-                    {fmtBytes(r.rbytes)}
-                  </TableCell>
-                  <TableCell align="right" size="small" sx={{ fontVariantNumeric: 'tabular-nums' }}>
-                    {fmtBytes(r.wbytes)}
-                  </TableCell>
-                  <TableCell
-                    align="right"
-                    size="small"
-                    color="text.secondary"
-                    sx={{ color: 'text.secondary' }}
-                  >
-                    {r.pid}
-                  </TableCell>
+                  {head(t('tasks.read'), 'rbytes')}
+                  {head(t('tasks.write'), 'wbytes')}
+                  {head(t('tasks.pid'), 'pid')}
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHead>
+              <TableBody>
+                {rows.slice(0, 100).map((r, i) => (
+                  <TableRow key={i} hover>
+                    <TableCell size="small" sx={{ fontFamily: 'ui-monospace, monospace' }}>
+                      {r.comm}
+                    </TableCell>
+                    <TableCell
+                      align="right"
+                      size="small"
+                      sx={{ fontVariantNumeric: 'tabular-nums' }}
+                    >
+                      {r.cpuMs}
+                    </TableCell>
+                    <TableCell
+                      align="right"
+                      size="small"
+                      sx={{ fontVariantNumeric: 'tabular-nums' }}
+                    >
+                      {r.wake}
+                    </TableCell>
+                    <TableCell
+                      align="right"
+                      size="small"
+                      sx={{ fontVariantNumeric: 'tabular-nums' }}
+                    >
+                      {r.sleep}
+                    </TableCell>
+                    <TableCell
+                      align="right"
+                      size="small"
+                      sx={{ fontVariantNumeric: 'tabular-nums' }}
+                    >
+                      {r.nvcsw}
+                    </TableCell>
+                    <TableCell
+                      align="right"
+                      size="small"
+                      sx={{ fontVariantNumeric: 'tabular-nums' }}
+                    >
+                      {r.nivcsw}
+                    </TableCell>
+                    <TableCell
+                      align="right"
+                      size="small"
+                      sx={{ fontVariantNumeric: 'tabular-nums' }}
+                    >
+                      {fmtBytes(r.rbytes)}
+                    </TableCell>
+                    <TableCell
+                      align="right"
+                      size="small"
+                      sx={{ fontVariantNumeric: 'tabular-nums' }}
+                    >
+                      {fmtBytes(r.wbytes)}
+                    </TableCell>
+                    <TableCell
+                      align="right"
+                      size="small"
+                      color="text.secondary"
+                      sx={{ color: 'text.secondary' }}
+                    >
+                      {r.pid}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </TableContainer>
         {rows.length > 100 && (
           <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>

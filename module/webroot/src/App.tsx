@@ -12,7 +12,7 @@ import {
   Typography,
 } from '@mui/material';
 import BatterySaverIcon from '@mui/icons-material/BatterySaver';
-import type { BatMonSnapshot } from './data/types';
+import type { BatMonSnapshot, ConfigData } from './data/types';
 import type { DataSource } from './data/source';
 import { ProcSource } from './data/source';
 import type { Language } from './i18n';
@@ -32,6 +32,7 @@ export function App() {
   const { t, lang, setLang } = useI18n();
   const [snap, setSnap] = useState<BatMonSnapshot | null>(null);
   const [chartSnap, setChartSnap] = useState<BatMonSnapshot | null>(null);
+  const [config, setConfig] = useState<ConfigData | null>(null);
   const [source, setSource] = useState<DataSource | null>(null);
   const [error, setError] = useState<string | null>(null);
   const lastChartRef = useRef(0);
@@ -57,6 +58,7 @@ export function App() {
         const s = await source.readAll();
         if (!cancelled) {
           setSnap(s);
+          setConfig(s.config);
           const now = Date.now();
           if (now - lastChartRef.current >= CHART_REFRESH_MS) {
             lastChartRef.current = now;
@@ -84,6 +86,15 @@ export function App() {
   }, [source, t]);
 
   const chartData = chartSnap ?? snap;
+
+  const onConfigChange = (values: Partial<ConfigData>) => {
+    setConfig((prev) => (prev ? { ...prev, ...values } : prev));
+    if (source) {
+      source.setConfig(values).catch((e) => {
+        setError(`${t('app.readError')}: ${String(e)}`);
+      });
+    }
+  };
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
@@ -134,12 +145,12 @@ export function App() {
           <Stack spacing={2}>
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, lg: 4 }}>
-                <BatterySummary snap={chartData!} />
+                <BatterySummary snap={snap} />
               </Grid>
               <Grid size={{ xs: 12, lg: 8 }}>
                 <Stack spacing={2}>
                   <DrainPanel snap={snap} />
-                  <CpuPanel cpu={chartData!.cpu} />
+                  <CpuPanel cpu={snap.cpu} />
                 </Stack>
               </Grid>
             </Grid>
@@ -149,7 +160,7 @@ export function App() {
                 <EventsPanel events={snap.events} />
               </Grid>
               <Grid size={{ xs: 12, lg: 6 }}>
-                <ConfigPanel config={snap.config} />
+                {config && <ConfigPanel config={config} onChange={onConfigChange} />}
               </Grid>
             </Grid>
             <TasksTable tasks={snap.tasks} deltas={snap.deltas} />
