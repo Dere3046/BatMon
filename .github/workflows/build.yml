@@ -1,0 +1,143 @@
+name: build
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        kmi:
+          - android12-5.10
+          - android13-5.10
+          - android13-5.15
+          - android14-5.15
+          - android14-6.1
+          - android15-6.6
+          - android16-6.12
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build ${{ matrix.kmi }}
+        run: |
+          docker run --rm --privileged \
+            -e KDIR="/opt/ddk/kdir/${{ matrix.kmi }}" \
+            -v "$PWD/kernel:/src" -w /src \
+            ghcr.io/ylarod/ddk-min:${{ matrix.kmi }}-20260313 \
+            make
+
+      - name: Rename
+        run: mv kernel/batmon.ko kernel/batmon-${{ matrix.kmi }}.ko
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: batmon-${{ matrix.kmi }}
+          path: kernel/batmon-${{ matrix.kmi }}.ko
+          if-no-files-found: error
+
+  webui:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: module/webroot
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: module/webroot/package-lock.json
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: batmon-webui
+          path: module/webroot/dist
+          if-no-files-found: error
+
+  module:
+    needs: [build, webui]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: batmon-android*
+          merge-multiple: true
+          path: kos
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: batmon-webui
+          path: webui-dist
+
+      - name: Fetch update-binary
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/topjohnwu/Magisk/v30.7/scripts/module_installer.sh \
+            -o module/META-INF/com/google/android/update-binary
+          chmod 755 module/META-INF/com/google/android/update-binary
+
+      - name: Assemble module
+        run: |
+          set -e
+          rm -rf stage
+          mkdir -p stage/lib/arm64-v8a/lkm stage/META-INF/com/google/android stage/webroot
+          cp module/module.prop module/customize.sh module/service.sh module/action.sh module/uninstall.sh stage/
+          cp module/lib/arm64-v8a/status.sh stage/lib/arm64-v8a/
+          cp module/META-INF/com/google/android/updater-script stage/META-INF/com/google/android/
+          cp kos/*.ko stage/lib/arm64-v8a/lkm/
+          cp -r webui-dist/. stage/webroot/
+          cp LICENSE stage/LICENSE
+          chmod 755 stage/*.sh stage/lib/arm64-v8a/status.sh
+          VERSION=$(grep '^version=' stage/module.prop | cut -d= -f2)
+          SHORT_SHA=$(echo "$GITHUB_SHA" | cut -c1-7)
+          echo "$VERSION-$SHORT_SHA" > stage/VERSION
+          echo "MOD_VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "MOD_SHORT_SHA=$SHORT_SHA" >> "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: batmon-module-${{ env.MOD_VERSION }}-${{ env.MOD_SHORT_SHA }}
+          path: stage/
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build, module]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: batmon-android*
+          merge-multiple: true
+          path: ko
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: batmon-module-*
+          merge-multiple: true
+          path: mod
+
+      - name: Package module
+        run: |
+          cd mod
+          zip -r9 ../batmon-module.zip .
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ko/*.ko
+            batmon-module.zip
+          generate_release_notes: true
