@@ -22,6 +22,7 @@ import { HistoryChart } from './components/HistoryChart';
 import { DrainPanel } from './components/DrainPanel';
 import { CpuPanel } from './components/CpuPanel';
 import { EventsPanel } from './components/EventsPanel';
+import { SuspendPanel } from './components/SuspendPanel';
 import { TasksTable } from './components/TasksTable';
 import { ConfigPanel } from './components/ConfigPanel';
 
@@ -163,6 +164,7 @@ export function App() {
                 {config && <ConfigPanel config={config} onChange={onConfigChange} />}
               </Grid>
             </Grid>
+            <SuspendPanel suspend={snap.suspend} />
             <TasksTable tasks={snap.tasks} deltas={snap.deltas} />
           </Stack>
         )}

@@ -150,7 +150,6 @@ static int batmon_pm_notifier_call(struct notifier_block *nb,
 		se->duration_ms = 0;
 		se->resumed = false;
 		spin_unlock_irqrestore(&batmon_suspend_lock, flags);
-		batmon_event(EVENT_SUSPEND, 0, 0, 0, 0, 0);
 	} else if (event == PM_POST_SUSPEND) {
 		u64 now = batmon_now_ns();
 
@@ -161,7 +160,6 @@ static int batmon_pm_notifier_call(struct notifier_block *nb,
 		se->duration_ms = (now - se->ts) / NSEC_PER_MSEC;
 		se->resumed = true;
 		spin_unlock_irqrestore(&batmon_suspend_lock, flags);
-		batmon_event(EVENT_RESUME, 0, 0, 0, 0, 0);
 	}
 	return NOTIFY_OK;
 }
