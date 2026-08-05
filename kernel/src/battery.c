@@ -57,6 +57,32 @@ static int psy_get_int(struct power_supply *psy,
 	return 0;
 }
 
+int batmon_psy_get_mv(struct power_supply *psy,
+		      enum power_supply_property prop, int *val)
+{
+	int raw, rc;
+
+	rc = psy_get_int(psy, prop, &raw);
+	if (rc)
+		return rc;
+	*val = raw / 1000;
+	return 0;
+}
+
+int batmon_psy_get_ma(struct power_supply *psy,
+		      enum power_supply_property prop, int *val)
+{
+	int raw, rc;
+
+	rc = psy_get_int(psy, prop, &raw);
+	if (rc)
+		return rc;
+	if (abs(raw) >= 5000)
+		raw /= 1000;
+	*val = raw;
+	return 0;
+}
+
 static bool psy_has_prop(struct power_supply *psy,
 			 enum power_supply_property prop)
 {
@@ -227,11 +253,11 @@ static void sample_battery(struct batmon_sample *s)
 
 	if (!psy_get_int(batmon_main, POWER_SUPPLY_PROP_CAPACITY, &val))
 		s->cap = val;
-	if (!psy_get_int(batmon_main, POWER_SUPPLY_PROP_VOLTAGE_NOW, &val))
+	if (!batmon_psy_get_mv(batmon_main, POWER_SUPPLY_PROP_VOLTAGE_NOW, &val))
 		s->volt = val;
-	if (!psy_get_int(batmon_main, POWER_SUPPLY_PROP_CURRENT_NOW, &val))
+	if (!batmon_psy_get_ma(batmon_main, POWER_SUPPLY_PROP_CURRENT_NOW, &val))
 		s->curr = val;
-	if (!psy_get_int(batmon_main, POWER_SUPPLY_PROP_CURRENT_AVG, &val))
+	if (!batmon_psy_get_ma(batmon_main, POWER_SUPPLY_PROP_CURRENT_AVG, &val))
 		s->curravg = val;
 	if (!psy_get_int(batmon_main, POWER_SUPPLY_PROP_TEMP, &val))
 		s->temp = val;

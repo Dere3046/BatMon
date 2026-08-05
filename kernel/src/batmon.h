@@ -8,8 +8,9 @@
 
 #include <linux/types.h>
 #include <linux/pid.h>
+#include <linux/power_supply.h>
 
-#define BATMON_VERSION "1.1.2"
+#define BATMON_VERSION "1.1.3"
 
 #define BATMON_MAX_TASKS 1024
 #define BATMON_HISTORY 2048
@@ -146,6 +147,10 @@ void batmon_battery_exit(void);
 void batmon_sample_tick(void);
 const char *batmon_psy_name(void);
 struct power_supply *batmon_main_psy(void);
+int batmon_psy_get_mv(struct power_supply *psy,
+		      enum power_supply_property prop, int *val);
+int batmon_psy_get_ma(struct power_supply *psy,
+		      enum power_supply_property prop, int *val);
 void batmon_history_get(struct batmon_sample **hist, unsigned int *nr,
 			unsigned int *head);
 int batmon_drain_calc(struct batmon_drain *d);
