@@ -132,12 +132,15 @@ jobs:
 
       - name: Package module
         run: |
+          NAME="batmon-module-$(cat mod/VERSION)"
+          echo "RELEASE_NAME=$NAME" >> "$GITHUB_ENV"
           cd mod
-          zip -r9 ../batmon-module.zip .
+          zip -r9 "../${NAME}.zip" .
 
       - uses: softprops/action-gh-release@v2
         with:
+          name: ${{ env.RELEASE_NAME }}
           files: |
             ko/*.ko
-            batmon-module.zip
+            ${{ env.RELEASE_NAME }}.zip
           generate_release_notes: true
