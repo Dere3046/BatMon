@@ -25,6 +25,7 @@ export interface DrainData {
 
 export interface BatteryProps {
   capacity?: number;
+  capacityX10?: number;
   voltageMv?: number;
   currentMa?: number;
   currentAvgMa?: number;

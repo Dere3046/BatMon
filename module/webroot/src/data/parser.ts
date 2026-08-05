@@ -39,7 +39,7 @@ export function parseHistory(lines: string[]): HistorySample[] {
   const out: HistorySample[] = [];
   for (const line of lines) {
     const m = line.match(
-      /^(\d{2}:\d{2}:\d{2})\s+(\d+)\s+(\d+|-)\s+(\d+)\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(\w+)$/,
+      /^(\d{2}:\d{2}:\d{2})\s+(\d+)\s+(\d+(?:\.\d+)?|-)\s+(\d+)\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(\w+)$/,
     );
     if (!m) continue;
     out.push({
@@ -114,6 +114,9 @@ export function parseBattery(text: string): BatteryProps {
         break;
       case 'charge_counter_ua':
         out.chargeCounterUa = Number(m[2]);
+        break;
+      case 'capacity_x10':
+        out.capacityX10 = Number(m[2]);
         break;
       case 'time_to_empty_s':
         out.timeToEmptyS = Number(m[2]);

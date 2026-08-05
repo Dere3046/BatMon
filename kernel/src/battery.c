@@ -233,6 +233,7 @@ static void sample_battery(struct batmon_sample *s)
 	s->ts = batmon_now_ns();
 	s->wall = batmon_wall_sec();
 	s->cap = U32_MAX;
+	s->cap_x10 = U32_MAX;
 	s->status = POWER_SUPPLY_STATUS_UNKNOWN;
 	s->health = POWER_SUPPLY_HEALTH_UNKNOWN;
 
@@ -253,6 +254,21 @@ static void sample_battery(struct batmon_sample *s)
 		s->status = val;
 	if (!batmon_psy_get_int(batmon_main, POWER_SUPPLY_PROP_HEALTH, &val))
 		s->health = val;
+	{
+		int counter = 0, full = 0;
+		u64 pct;
+
+		if (!batmon_psy_get_int(batmon_main,
+					POWER_SUPPLY_PROP_CHARGE_COUNTER,
+					&counter) &&
+		    !batmon_psy_get_int(batmon_main,
+					POWER_SUPPLY_PROP_CHARGE_FULL,
+					&full) &&
+		    full > 0 && counter >= 0) {
+			pct = (u64)counter * 1000 / full;
+			s->cap_x10 = pct > 1000 ? 1000 : pct;
+		}
+	}
 }
 
 static unsigned int history_window(struct batmon_sample *newest,
