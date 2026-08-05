@@ -87,6 +87,8 @@ int batmon_build_diff(const struct batmon_task *new,
 		oi = batmon_find_pid(old, old_n, new[i].pid);
 		if (oi < 0)
 			continue;
+		if (new[i].cpu < old[oi].cpu)
+			continue;
 
 		out[j].pid = new[i].pid;
 		out[j].uid = new[i].uid;

@@ -181,7 +181,7 @@ static int show_battery(struct seq_file *s, void *v)
 			seq_printf(s, "%s %d\n", props[i].name, val);
 	}
 	{
-		int counter = 0, full = 0, cap = -1;
+		int counter = 0, full = 0;
 
 		if (!batmon_psy_get_int(psy, POWER_SUPPLY_PROP_CHARGE_COUNTER,
 					&counter) &&
@@ -193,21 +193,6 @@ static int show_battery(struct seq_file *s, void *v)
 			if (pct > 1000)
 				pct = 1000;
 			seq_printf(s, "charge_ratio_x10 %llu\n", pct);
-
-			if (!batmon_psy_get_int(psy,
-					       POWER_SUPPLY_PROP_CAPACITY,
-					       &cap) &&
-			    cap >= 0) {
-				u32 frac;
-
-				batmon_anchor_update(cap, counter, full);
-				frac = batmon_anchor_frac(cap, counter,
-							  full);
-				if (frac != U32_MAX)
-					seq_printf(s,
-						   "capacity_frac_x10 %u\n",
-						   frac);
-			}
 		}
 	}
 	return 0;
@@ -266,12 +251,7 @@ static int show_history(struct seq_file *s, unsigned int i)
 
 	idx = (it->head + BATMON_HISTORY - 1 - i) % BATMON_HISTORY;
 	fmt_wall(hist[idx].wall, wall, sizeof(wall));
-	if (hist[idx].cap_frac_x10 != U32_MAX)
-		snprintf(cap, sizeof(cap), "%u.%u",
-			 hist[idx].cap_frac_x10 / 10,
-			 hist[idx].cap_frac_x10 % 10);
-	else
-		snprintf(cap, sizeof(cap), "-");
+	fmt_cap(hist[idx].cap, cap, sizeof(cap));
 	seq_printf(s, "%s %5llu %4s %4u %6d %6d %5d %s\n",
 		   wall, (u64)(hist[idx].ts / NSEC_PER_SEC), cap,
 		   hist[idx].volt, hist[idx].curr, hist[idx].curravg,

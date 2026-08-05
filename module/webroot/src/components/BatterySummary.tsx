@@ -48,7 +48,7 @@ function StatCard({
 export const BatterySummary = memo(function BatterySummary({ snap }: { snap: BatMonSnapshot }) {
   const { t } = useI18n();
   const b = snap.battery;
-  const cap = b.capacityFracX10 !== undefined ? b.capacityFracX10 / 10 : (b.capacity ?? 0);
+  const cap = b.capacity ?? 0;
   const statusKey: MessageKey =
     b.status === 1
       ? 'battery.status.charging'

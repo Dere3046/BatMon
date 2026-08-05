@@ -80,7 +80,7 @@ export const DrainPanel = memo(function DrainPanel({ snap }: { snap: BatMonSnaps
           <RateBox
             label={t('drain.avgCurrent')}
             value={`${d.avgMa1m} ${t('unit.ma')}`}
-            warn={d.avgMa1m <= -1000}
+            warn={Math.abs(d.avgMa1m) >= 1000 && (d.rate1m ?? 0) < 0}
           />
           <RateBox label={t('drain.voltageSlope')} value={fmtSlope(voltSlope)} />
         </Stack>
