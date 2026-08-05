@@ -102,7 +102,7 @@ export function App() {
         position="sticky"
         elevation={0}
         color="transparent"
-        sx={{ borderBottom: '1px solid', borderColor: 'divider' }}
+        sx={{ bgcolor: 'background.default', borderBottom: '1px solid', borderColor: 'divider' }}
       >
         <Toolbar variant="dense">
           <BatterySaverIcon sx={{ mr: 1.5, color: 'primary.main' }} />

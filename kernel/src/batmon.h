@@ -9,7 +9,7 @@
 #include <linux/types.h>
 #include <linux/pid.h>
 
-#define BATMON_VERSION "1.1.0"
+#define BATMON_VERSION "1.1.2"
 
 #define BATMON_MAX_TASKS 1024
 #define BATMON_HISTORY 2048

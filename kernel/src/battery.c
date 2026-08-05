@@ -286,9 +286,9 @@ static unsigned int history_window(struct batmon_sample *newest,
 static void anomaly_check(struct batmon_sample *cur,
 			  struct batmon_sample *prev)
 {
-	u32 ocap, ovolt;
-	s64 elapsed, rate_x100;
-	s32 avg_ma;
+	u32 ocap, ovolt, cap5;
+	s64 elapsed, rate_x100, el5, rate5_x100;
+	s32 avg_ma, avg5;
 	int jump;
 	bool disch;
 
@@ -310,6 +310,14 @@ static void anomaly_check(struct batmon_sample *cur,
 	if (rate_x100 > 0)
 		rate_x100 = 0;
 
+	if (history_window(cur, 300000, &el5, &avg5, &cap5, NULL) >= 2 &&
+	    el5 >= 1000 && cap5 != U32_MAX)
+		rate5_x100 = ((s64)cur->cap - (s64)cap5) * 100 * 60000 / el5;
+	else
+		rate5_x100 = 0;
+	if (rate5_x100 > 0)
+		rate5_x100 = 0;
+
 	if (jump * 100 <= -(s64)batmon_cfg.jump_pct) {
 		if (disch && avg_ma < (s32)batmon_cfg.drop_ma)
 			batmon_event(EVENT_GAUGE, ocap, cur->cap, ovolt,
@@ -317,9 +325,9 @@ static void anomaly_check(struct batmon_sample *cur,
 		else
 			batmon_event(EVENT_DROP, ocap, cur->cap, ovolt,
 				     cur->volt, avg_ma);
-	} else if (disch && -rate_x100 >= batmon_cfg.rate_pct_min) {
-		batmon_event(EVENT_DRAIN, ocap, cur->cap, ovolt, cur->volt,
-			     avg_ma);
+	} else if (disch && -rate5_x100 >= batmon_cfg.rate_pct_min) {
+		batmon_event(EVENT_DRAIN, cap5, cur->cap, 0, cur->volt,
+			     avg5);
 	}
 
 	if (avg_ma >= (s32)batmon_cfg.warn_ma &&
@@ -327,10 +335,10 @@ static void anomaly_check(struct batmon_sample *cur,
 		batmon_event(EVENT_POWER, ocap, cur->cap, ovolt, cur->volt,
 			     avg_ma);
 
-	if (disch && -rate_x100 >= batmon_cfg.drop_pct_min &&
-	    avg_ma < (s32)batmon_cfg.drop_ma)
-		batmon_event(EVENT_GAUGE, ocap, cur->cap, ovolt, cur->volt,
-			     avg_ma);
+	if (disch && -rate5_x100 >= batmon_cfg.drop_pct_min &&
+	    avg5 < (s32)batmon_cfg.drop_ma)
+		batmon_event(EVENT_GAUGE, cap5, cur->cap, 0, cur->volt,
+			     avg5);
 }
 
 void batmon_sample_tick(void)

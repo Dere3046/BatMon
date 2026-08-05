@@ -75,7 +75,7 @@ export const BatterySummary = memo(function BatterySummary({ snap }: { snap: Bat
     b.status === 1 || b.status === 4 ? `+${mag}` : b.status === 2 ? `-${mag}` : String(raw);
 
   const temp = ((b.tempCx10 ?? 0) / 10).toFixed(1);
-  const rate = snap.drain.rate1m ?? snap.drain.rate5m;
+  const rate = snap.drain.rate1m ?? snap.drain.rate5m ?? snap.drain.rate15m;
   const tteHours =
     b.timeToEmptyS !== undefined
       ? (b.timeToEmptyS / 3600).toFixed(1)
@@ -130,7 +130,7 @@ export const BatterySummary = memo(function BatterySummary({ snap }: { snap: Bat
           </Stack>
           <Chip size="small" color={statusColor} label={t(statusKey)} />
         </Stack>
-        <Box sx={{ height: 130, mt: -2 }}>
+        <Box sx={{ height: 130 }}>
           <EChart option={gauge} height={130} />
         </Box>
         <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" sx={{ mt: 1 }}>

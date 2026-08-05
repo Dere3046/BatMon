@@ -29,15 +29,32 @@ export const DrainPanel = memo(function DrainPanel({ snap }: { snap: BatMonSnaps
   const pctPerMin = t('drain.percentPerMin');
   const mvPerMin = t('drain.mvPerMin');
 
+  const hist = snap.history;
+  let voltSlope: number | null = d.voltSlope1m !== null ? d.voltSlope1m / 10 : null;
+  if (hist.length >= 2) {
+    const newest = hist[hist.length - 1];
+    const cutoff = newest.uptimeS - 300;
+    let oldest = hist[0];
+    for (let i = hist.length - 1; i >= 0; i--) {
+      oldest = hist[i];
+      if (hist[i].uptimeS <= cutoff) break;
+    }
+    const elMin = (newest.uptimeS - oldest.uptimeS) / 60;
+    if (elMin >= 1) {
+      voltSlope = Math.round(((newest.voltageMv - oldest.voltageMv) / elMin) * 10) / 10;
+    }
+  }
+
   const fmtRate = (rate: number | null): string => {
     if (rate === null) return na;
-    const sign = rate < 0 ? '' : '+';
-    return `${sign}${(rate / 100).toFixed(2)} ${pctPerMin}`;
+    const sign = rate < 0 ? '-' : '';
+    return `${sign}${(Math.abs(rate) / 100).toFixed(2)} ${pctPerMin}`;
   };
 
   const fmtSlope = (slope: number | null): string => {
     if (slope === null) return na;
-    return `${(slope / 10).toFixed(1)} ${mvPerMin}`;
+    const sign = slope < 0 ? '' : '+';
+    return `${sign}${slope.toFixed(1)} ${mvPerMin}`;
   };
 
   return (
@@ -65,7 +82,7 @@ export const DrainPanel = memo(function DrainPanel({ snap }: { snap: BatMonSnaps
             value={`${d.avgMa1m} ${t('unit.ma')}`}
             warn={d.avgMa1m <= -1000}
           />
-          <RateBox label={t('drain.voltageSlope')} value={fmtSlope(d.voltSlope1m)} />
+          <RateBox label={t('drain.voltageSlope')} value={fmtSlope(voltSlope)} />
         </Stack>
       </CardContent>
     </Card>

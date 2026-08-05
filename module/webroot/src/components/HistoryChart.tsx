@@ -8,7 +8,7 @@ import { EChart, chartAxis } from './EChart';
 export const HistoryChart = memo(function HistoryChart({ snap }: { snap: BatMonSnapshot }) {
   const { t } = useI18n();
   const option = useMemo((): EChartsOption => {
-    const h = snap.history;
+    const h = snap.history.slice().reverse();
     return {
       animation: false,
       backgroundColor: 'transparent',
