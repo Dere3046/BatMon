@@ -170,14 +170,16 @@ static int show_battery(struct seq_file *s, void *v)
 	for (i = 0; i < ARRAY_SIZE(props); i++) {
 		int val = 0;
 
-		if (props[i].prop == POWER_SUPPLY_PROP_VOLTAGE_NOW)
+		if (props[i].prop == POWER_SUPPLY_PROP_VOLTAGE_NOW) {
 			rc = batmon_psy_get_mv(psy, props[i].prop, &val);
-		else if (props[i].prop == POWER_SUPPLY_PROP_CURRENT_NOW ||
-			 props[i].prop == POWER_SUPPLY_PROP_CURRENT_AVG)
+		} else if (props[i].prop == POWER_SUPPLY_PROP_CURRENT_NOW ||
+			   props[i].prop == POWER_SUPPLY_PROP_CURRENT_AVG) {
 			rc = batmon_psy_get_ma(psy, props[i].prop, &val);
-		else
+		} else {
 			rc = power_supply_get_property(psy, props[i].prop,
 						      &pval);
+			val = pval.intval;
+		}
 		if (!rc)
 			seq_printf(s, "%s %d\n", props[i].name, val);
 	}

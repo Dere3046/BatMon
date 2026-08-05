@@ -65,6 +65,7 @@ export function parseDrain(text: string): DrainData {
     if (!v || v === 'n/a') return null;
     return Math.round(Number(v.replace('%/min', '')) * 100);
   };
+  const slopeRaw = get('volt_slope_1m');
   return {
     capacity: Number(get('capacity') ?? '-1'),
     voltageMv: Number(get('voltage_mv') ?? 0),
@@ -75,9 +76,9 @@ export function parseDrain(text: string): DrainData {
     rate5m: rate(get('rate_5m')),
     rate15m: rate(get('rate_15m')),
     voltSlope1m:
-      Number(get('volt_slope_1m')?.replace(' mv/min', '') ?? -999) === -999
+      slopeRaw === null || slopeRaw === 'n/a'
         ? null
-        : Math.round(Number(get('volt_slope_1m')!.replace(' mv/min', '')) * 10),
+        : Math.round(Number(slopeRaw.replace(' mv/min', '')) * 10),
   };
 }
 
