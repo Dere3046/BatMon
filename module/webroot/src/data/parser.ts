@@ -115,8 +115,11 @@ export function parseBattery(text: string): BatteryProps {
       case 'charge_counter_ua':
         out.chargeCounterUa = Number(m[2]);
         break;
-      case 'capacity_x10':
-        out.capacityX10 = Number(m[2]);
+      case 'capacity_frac_x10':
+        out.capacityFracX10 = Number(m[2]);
+        break;
+      case 'charge_ratio_x10':
+        out.chargeRatioX10 = Number(m[2]);
         break;
       case 'time_to_empty_s':
         out.timeToEmptyS = Number(m[2]);

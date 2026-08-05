@@ -225,6 +225,34 @@ void batmon_history_get(struct batmon_sample **hist, unsigned int *nr,
 	*head = batmon_history_head;
 }
 
+static u32 batmon_anchor_cap;
+static int batmon_anchor_counter = -1;
+
+void batmon_anchor_update(u32 cap, int counter, int full)
+{
+	(void)full;
+	if (batmon_anchor_counter < 0 || cap != batmon_anchor_cap) {
+		batmon_anchor_cap = cap;
+		batmon_anchor_counter = counter;
+	}
+}
+
+u32 batmon_anchor_frac(u32 cap, int counter, int full)
+{
+	s64 delta, pct;
+
+	(void)cap;
+	if (batmon_anchor_counter < 0)
+		return U32_MAX;
+	delta = (s64)counter - batmon_anchor_counter;
+	pct = (s64)batmon_anchor_cap * 10 + delta * 1000 / full;
+	if (pct < 0)
+		pct = 0;
+	if (pct > 1000)
+		pct = 1000;
+	return pct;
+}
+
 static void sample_battery(struct batmon_sample *s)
 {
 	int val;
@@ -233,7 +261,7 @@ static void sample_battery(struct batmon_sample *s)
 	s->ts = batmon_now_ns();
 	s->wall = batmon_wall_sec();
 	s->cap = U32_MAX;
-	s->cap_x10 = U32_MAX;
+	s->cap_frac_x10 = U32_MAX;
 	s->status = POWER_SUPPLY_STATUS_UNKNOWN;
 	s->health = POWER_SUPPLY_HEALTH_UNKNOWN;
 
@@ -254,9 +282,9 @@ static void sample_battery(struct batmon_sample *s)
 		s->status = val;
 	if (!batmon_psy_get_int(batmon_main, POWER_SUPPLY_PROP_HEALTH, &val))
 		s->health = val;
-	{
+
+	if (s->cap != U32_MAX) {
 		int counter = 0, full = 0;
-		u64 pct;
 
 		if (!batmon_psy_get_int(batmon_main,
 					POWER_SUPPLY_PROP_CHARGE_COUNTER,
@@ -265,8 +293,8 @@ static void sample_battery(struct batmon_sample *s)
 					POWER_SUPPLY_PROP_CHARGE_FULL,
 					&full) &&
 		    full > 0 && counter >= 0) {
-			pct = (u64)counter * 1000 / full;
-			s->cap_x10 = pct > 1000 ? 1000 : pct;
+			batmon_anchor_update(s->cap, counter, full);
+			s->cap_frac_x10 = batmon_anchor_frac(s->cap, counter, full);
 		}
 	}
 }
@@ -469,9 +497,25 @@ int batmon_drain_calc(struct batmon_drain *d)
 
 		if (mAh > 0) {
 			s64 avg = div_s64(cap_sum, cnt);
+			s64 mag = avg < 0 ? -avg : avg;
+			int rate = (int)div_s64(mag * 100000,
+						(s64)mAh * 60);
 
-			*wins[w].rate = (int)div_s64(avg * 100000,
-						     (s64)mAh * 60);
+			if (newest->cap_frac_x10 != U32_MAX &&
+			    oldest->cap_frac_x10 != U32_MAX) {
+				if (newest->cap_frac_x10 <
+				    oldest->cap_frac_x10)
+					rate = -rate;
+				else if (newest->cap_frac_x10 ==
+					 oldest->cap_frac_x10 &&
+					 newest->status ==
+					 POWER_SUPPLY_STATUS_DISCHARGING)
+					rate = -rate;
+			} else if (newest->status ==
+				   POWER_SUPPLY_STATUS_DISCHARGING) {
+				rate = -rate;
+			}
+			*wins[w].rate = rate;
 		} else if (oldest->cap != U32_MAX &&
 			   newest->cap != U32_MAX) {
 			s64 delta = (s64)newest->cap - (s64)oldest->cap;

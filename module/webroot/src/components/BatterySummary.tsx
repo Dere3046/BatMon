@@ -48,7 +48,7 @@ function StatCard({
 export const BatterySummary = memo(function BatterySummary({ snap }: { snap: BatMonSnapshot }) {
   const { t } = useI18n();
   const b = snap.battery;
-  const cap = b.capacityX10 !== undefined ? b.capacityX10 / 10 : (b.capacity ?? 0);
+  const cap = b.capacityFracX10 !== undefined ? b.capacityFracX10 / 10 : (b.capacity ?? 0);
   const statusKey: MessageKey =
     b.status === 1
       ? 'battery.status.charging'
@@ -75,7 +75,7 @@ export const BatterySummary = memo(function BatterySummary({ snap }: { snap: Bat
   const temp = ((b.tempCx10 ?? 0) / 10).toFixed(1);
   const rate = snap.drain.rate1m ?? snap.drain.rate5m ?? snap.drain.rate15m;
   const tteHours =
-    b.timeToEmptyS !== undefined
+    b.timeToEmptyS !== undefined && b.timeToEmptyS > 0
       ? (b.timeToEmptyS / 3600).toFixed(1)
       : cap > 0 && rate !== null && rate < 0
         ? (cap / (Math.abs(rate) / 1000) / 60).toFixed(1)

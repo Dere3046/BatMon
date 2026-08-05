@@ -10,7 +10,7 @@
 #include <linux/pid.h>
 #include <linux/power_supply.h>
 
-#define BATMON_VERSION "1.1.8"
+#define BATMON_VERSION "1.2.0"
 
 #define BATMON_MAX_TASKS 1024
 #define BATMON_HISTORY 2048
@@ -39,7 +39,7 @@ struct batmon_sample {
 	u64 ts;        /* boottime ns */
 	s64 wall;      /* realtime sec */
 	u32 cap;       /* percent, U32_MAX if unavailable */
-	u32 cap_x10;   /* percent x10 from charge counter, U32_MAX if unavailable */
+	u32 cap_frac_x10; /* anchored percent x10, U32_MAX if unavailable */
 	u32 volt;      /* mV */
 	s32 curr;      /* mA */
 	s32 curravg;   /* mA */
@@ -150,6 +150,8 @@ const char *batmon_psy_name(void);
 struct power_supply *batmon_main_psy(void);
 int batmon_psy_get_mv(struct power_supply *psy,
 		      enum power_supply_property prop, int *val);
+void batmon_anchor_update(u32 cap, int counter, int full);
+u32 batmon_anchor_frac(u32 cap, int counter, int full);
 int batmon_psy_get_int(struct power_supply *psy,
 		       enum power_supply_property prop, int *val);
 void batmon_history_get(struct batmon_sample **hist, unsigned int *nr,
