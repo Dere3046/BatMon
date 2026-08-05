@@ -2,10 +2,6 @@
 
 Battery drain telemetry LKM for Android GKI kernels.
 
-Diagnoses abnormal battery drain and sudden capacity drops. Distinguishes
-real drain (a process working in the background) from fuel gauge
-estimation error by correlating capacity, voltage and current over time.
-
 ## usage
 
 install the module zip from releases. at boot the service loads the LKM
